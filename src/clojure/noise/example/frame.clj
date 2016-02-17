@@ -7,23 +7,31 @@
   (.fillRect gfx x y 1 1))
 
 (defn make-frame [size]
+  "convenience method to make an AWT fram of dimensions size x size"
   (let [frame (Frame.)
         _ (.setSize frame (Dimension. size size))
         _ (.setVisible frame true)]
     frame))
 
 (defn standard-noise [x y]
-  (noise/fbm-noise 8 0.5 0.01 0 255 [x y]))
+  "standard terrain-like noise"
+  (noise/scale (noise/fbm 8 0.5 0.01 [x y]) 0 255))
 
-(defn half-iter-noise [x y]
-  (noise/fbm-noise 4 0.5 0.01 0 255 [x y]))
+(defn staged-noise [x y]
+  "build noise in multiple stages.
+  Chunky sets the general shape, increasing local grouping
+  and refined applies the motion"
+  (let [chunky (noise/scale (noise/fbm 1 0 0.003 [x y]) 0 255)
+        refined (noise/scale (noise/fbm 6 0.52 0.01 [x y]) 0 255)]
+    (+ (* 0.5 chunky) (* 0.5 refined))))
 
-(defn earth [grey]
-  (if (< 178 grey)
+(defn colorize-earth [grey]
+  (if (< 138 grey)
     (Color. 0 grey 0)
     (Color. 0 0 grey)))
 
-(defn greyscale [grey] #(Color. grey grey grey))
+(defn colorize-greyscale [grey]
+  (Color. grey grey grey))
 
 (defn noise-frame
   ([frame colorize get-noise]
@@ -39,5 +47,5 @@
   ([frame colorize]
    (noise-frame frame colorize standard-noise))
   ([frame]
-   (noise-frame frame greyscale)))
+   (noise-frame frame colorize-greyscale)))
 
